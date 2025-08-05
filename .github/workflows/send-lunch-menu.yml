@@ -1,0 +1,32 @@
+
+name: Send Daily Lunch Menu to Slack
+
+on:
+  schedule:
+    # Runs at 00:00 UTC, which is 9:00 AM in Korea (KST)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  send_message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run script
+        env:
+          API_KEY: ${{ secrets.NEIS_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo $API_KEY > api.txt
+          echo $SLACK_WEBHOOK_URL > slack_webhook_url.txt
+          python main.py
