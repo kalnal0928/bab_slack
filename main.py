@@ -1,5 +1,6 @@
 from get_meal_data import get_meal_data, format_meal_data
 from send_to_slack import send_slack_message
+from send_to_kakao import send_message_to_me
 import datetime
 
 def main():
@@ -18,6 +19,8 @@ def main():
 
     # Send the message to Slack
     send_slack_message(message)
+    # Send the message to me
+    send_message_to_me(message)
 
 if __name__ == "__main__":
     main()
