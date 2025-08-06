@@ -3,3 +3,4 @@
   functions = "netlify/functions" # Netlify Functions가 위치할 디렉토리
 
 [functions]
+  external_node_modules = [] # Netlify Functions 빌드 트리거를 위한 더미 설정
