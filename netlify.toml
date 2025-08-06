@@ -3,4 +3,3 @@
   functions = "netlify/functions" # Netlify Functions가 위치할 디렉토리
 
 [functions]
-  python_version = "3.9" # 사용할 Python 버전 (Netlify에서 지원하는 버전 확인 필요)
