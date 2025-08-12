@@ -20,7 +20,11 @@ def load_config():
 # NEIS API 기본 정보
 API_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo"
 ATPT_OFCDC_SC_CODE = "R10"  # 경상북도교육청
-SD_SCHUL_CODE = "7670053"      # 경덕중학교
+SD_SCHUL_CODE = "8791090"      # 경덕중학교 (급식 정보 확인된 코드)
+
+
+# 기존 ATPT_OFCDC_SC_CODE 및 SD_SCHUL_CODE는 이제 동적으로 설정됩니다.
+
 
 def get_api_data(api_key, meal_date):
     """NEIS API를 호출하여 급식 정보를 가져옵니다."""
@@ -92,5 +96,8 @@ if __name__ == "__main__":
         api_response = get_api_data(neis_api_key, today_date)
 
         if api_response:
+            print("--- NEIS API Raw Response ---")
+            print(json.dumps(api_response, indent=2))
+            print("-----------------------------")
             slack_message = format_meal_data(api_response)
             send_to_slack(slack_webhook_url, slack_message)
