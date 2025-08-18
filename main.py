@@ -3,6 +3,15 @@ import os
 import json
 from datetime import datetime
 
+# .env 파일 로드를 위한 dotenv 추가
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # .env 파일 로드
+    print("✅ .env 파일 로드 완료")
+except ImportError:
+    print("⚠️ python-dotenv가 설치되지 않았습니다. pip install python-dotenv로 설치하세요.")
+    print("⚠️ 환경변수를 직접 설정하거나 GitHub Actions에서 실행하세요.")
+
 # --- 설정 파일 로드 ---
 def load_config():
     """환경 변수에서 API 키와 Telegram Bot Token, Chat ID를 로드합니다."""
