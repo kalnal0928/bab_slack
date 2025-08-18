@@ -250,7 +250,7 @@ def test_telegram_connection(bot_token, chat_id):
     """Telegram 연결을 테스트합니다."""
     print("🔍 Telegram 연결 테스트 시작...")
     
-    test_message = "🧪 급식 알림봇 연결 테스트 메시지입니다."
+    test_message = "🧪 오늘의 급식 알림 메시지입니다."
     success = send_to_telegram(bot_token, chat_id, test_message)
     
     if success:
