@@ -192,7 +192,8 @@ def send_to_telegram(bot_token, chat_id, message):
     telegram_api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     
     # Telegram API에서 안전하게 처리할 수 있는 메시지로 변환
-    safe_message = message.replace('*', '').replace('_', '').replace('[', '(').replace(']', ')')
+    # <br/> 태그를 줄바꿈으로 변환하고 HTML 특수문자 처리
+    safe_message = message.replace('<br/>', '\n').replace('<br>', '\n')
     
     payload = {
         'chat_id': chat_id,
@@ -200,8 +201,15 @@ def send_to_telegram(bot_token, chat_id, message):
         'parse_mode': 'HTML'  # HTML 파싱 모드 사용
     }
     
-    # HTML 태그로 메시지 재구성
-    html_message = safe_message.replace('\n', '<br>')
+    # HTML 태그로 메시지 재구성 (Telegram에서 지원하는 태그만 사용)
+    html_message = safe_message.replace('\n', '\n')
+    
+    # Telegram에서 지원하는 HTML 태그로 변환
+    html_message = html_message.replace('🏫', '<b>🏫</b>')
+    html_message = html_message.replace('🍽️', '<b>🍽️</b>')
+    html_message = html_message.replace('🍚', '<b>🍚</b>')
+    html_message = html_message.replace('🥗', '<b>🥗</b>')
+    
     payload['text'] = html_message
     
     headers = {'Content-Type': 'application/json'}
