@@ -41,28 +41,115 @@ def get_api_data(api_key, meal_date):
         'MLSV_YMD': meal_date
     }
     try:
-        print(f"API 요청 파라미터: {params}")
+        print(f"🔍 API 요청 시작...")
+        print(f"📅 요청 날짜: {meal_date}")
+        print(f"🏫 학교 코드: {SD_SCHUL_CODE}")
+        print(f"📋 API 요청 파라미터: {params}")
+        
         response = requests.get(API_URL, params=params, timeout=10)
+        
+        print(f"📡 HTTP 상태 코드: {response.status_code}")
+        print(f"📡 HTTP 헤더: {dict(response.headers)}")
+        
+        if response.status_code != 200:
+            print(f"❌ HTTP 오류: {response.status_code}")
+            print(f"❌ 응답 내용: {response.text}")
+            return None
+            
         response.raise_for_status() # Raise an exception for HTTP errors
-        print(f"Lunch API response: {response.text}")
-        return response.json()
+        
+        print(f"✅ API 응답 성공!")
+        print(f"📄 응답 길이: {len(response.text)} 문자")
+        
+        # JSON 파싱 시도
+        try:
+            json_data = response.json()
+            print(f"✅ JSON 파싱 성공")
+            print(f"📊 응답 데이터 타입: {type(json_data)}")
+            return json_data
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON 파싱 실패: {e}")
+            print(f"📄 원본 응답 내용:")
+            print(response.text[:500] + "..." if len(response.text) > 500 else response.text)
+            return None
+            
     except requests.exceptions.RequestException as e:
-        print(f"API 요청 중 에러 발생: {e}")
+        print(f"❌ API 요청 중 에러 발생: {e}")
+        print(f"❌ 에러 타입: {type(e)}")
+        return None
+    except Exception as e:
+        print(f"❌ 예상치 못한 오류: {e}")
+        print(f"❌ 에러 타입: {type(e)}")
         return None
 
 def format_meal_data(data):
     """API 응답 데이터를 Telegram 메시지 형식으로 가공합니다."""
     try:
-        meal_info = data['mealServiceDietInfo'][1]['row']
+        print("=== API 응답 데이터 구조 분석 ===")
+        print(f"응답 키들: {list(data.keys())}")
         
-        # 중식 정보만 필터링
-        lunch_menu = next((item for item in meal_info if item['MMEAL_SC_NM'] == '중식'), None)
-
+        # mealServiceDietInfo가 있는지 확인
+        if 'mealServiceDietInfo' not in data:
+            print("❌ mealServiceDietInfo 키가 없습니다.")
+            if 'RESULT' in data:
+                result_code = data['RESULT'].get('CODE', '알 수 없음')
+                result_msg = data['RESULT'].get('MESSAGE', '알 수 없음')
+                print(f"API 결과: {result_code} - {result_msg}")
+                if result_code == 'INFO-200':
+                    return "오늘은 급식 정보가 없습니다."
+                else:
+                    return f"API 오류: {result_code} - {result_msg}"
+            return "급식 정보를 찾을 수 없습니다."
+        
+        meal_info = data['mealServiceDietInfo']
+        print(f"mealServiceDietInfo 타입: {type(meal_info)}")
+        print(f"mealServiceDietInfo 내용: {meal_info}")
+        
+        # meal_info가 리스트인 경우와 딕셔너리인 경우를 모두 처리
+        if isinstance(meal_info, list):
+            if len(meal_info) < 2:
+                print("❌ mealServiceDietInfo 리스트가 너무 짧습니다.")
+                return "급식 정보 구조가 올바르지 않습니다."
+            
+            # 두 번째 요소에 row가 있는지 확인
+            if 'row' not in meal_info[1]:
+                print("❌ row 키를 찾을 수 없습니다.")
+                return "급식 정보를 찾을 수 없습니다."
+            
+            rows = meal_info[1]['row']
+        elif isinstance(meal_info, dict):
+            if 'row' not in meal_info:
+                print("❌ row 키를 찾을 수 없습니다.")
+                return "급식 정보를 찾을 수 없습니다."
+            rows = meal_info['row']
+        else:
+            print(f"❌ 예상치 못한 mealServiceDietInfo 타입: {type(meal_info)}")
+            return "급식 정보 구조가 올바르지 않습니다."
+        
+        print(f"급식 행 수: {len(rows) if isinstance(rows, list) else '단일 행'}")
+        
+        # rows가 리스트가 아닌 경우 리스트로 변환
+        if not isinstance(rows, list):
+            rows = [rows]
+        
+        # 중식 정보 찾기
+        lunch_menu = None
+        for row in rows:
+            print(f"급식 타입: {row.get('MMEAL_SC_NM', '알 수 없음')}")
+            if row.get('MMEAL_SC_NM') == '중식':
+                lunch_menu = row
+                break
+        
         if not lunch_menu:
+            print("❌ 중식 정보를 찾을 수 없습니다.")
+            available_meals = [row.get('MMEAL_SC_NM', '알 수 없음') for row in rows]
+            print(f"사용 가능한 급식: {available_meals}")
             return "오늘은 중식 정보가 없습니다."
 
+        print("✅ 중식 정보를 찾았습니다!")
+        
         # 메뉴, 칼로리, 영양 정보 추출 및 가공
-        dish = lunch_menu['DDISH_NM'].replace('<br/>', '\n')
+        dish = lunch_menu.get('DDISH_NM', '메뉴 정보 없음').replace('<br/>', '\n')
         cal_info = lunch_menu.get('CAL_INFO', '정보 없음')
         ntr_info = lunch_menu.get('NTR_INFO', '정보 없음').replace('<br/>', '\n')
 
@@ -73,13 +160,23 @@ def format_meal_data(data):
             f"🍚 칼로리: {cal_info}\n\n"
             f"🥗 영양정보:\n{ntr_info}"
         )
+        
+        print("✅ 메시지 가공 완료")
         return message
 
-    except (KeyError, TypeError, IndexError):
+    except (KeyError, TypeError, IndexError) as e:
+        print(f"❌ 데이터 파싱 중 오류 발생: {e}")
+        print(f"오류 타입: {type(e)}")
+        
         # 데이터가 없는 경우 (INFO-200)
         if data.get('RESULT', {}).get('CODE') == 'INFO-200':
             return "오늘은 급식 정보가 없습니다."
-        return "급식 정보를 파싱하는 중 오류가 발생했습니다."
+        
+        # 더 자세한 디버깅 정보 제공
+        return f"급식 정보를 파싱하는 중 오류가 발생했습니다. (오류: {str(e)})"
+    except Exception as e:
+        print(f"❌ 예상치 못한 오류: {e}")
+        return f"급식 정보 처리 중 예상치 못한 오류가 발생했습니다: {str(e)}"
 
 def send_to_telegram(bot_token, chat_id, message):
     """Telegram으로 메시지를 전송합니다."""
@@ -148,6 +245,7 @@ def test_telegram_connection(bot_token, chat_id):
 
 if __name__ == "__main__":
     print("🚀 급식 알림봇 시작...")
+    print("=" * 50)
     
     neis_api_key, telegram_bot_token, telegram_chat_id = load_config()
 
@@ -155,24 +253,37 @@ if __name__ == "__main__":
         print("❌ 필수 환경 변수가 설정되지 않았습니다. 스크립트를 종료합니다.")
         exit(1)
     
+    print("✅ 환경 변수 설정 완료")
+    print("=" * 50)
+    
     # Telegram 연결 테스트
+    print("🔍 Telegram 연결 테스트 시작...")
     if not test_telegram_connection(telegram_bot_token, telegram_chat_id):
         print("❌ Telegram 연결에 실패했습니다. 설정을 확인해주세요.")
         exit(1)
     
+    print("✅ Telegram 연결 테스트 성공!")
+    print("=" * 50)
+    
     today_date = datetime.now().strftime('%Y%m%d')
     print(f"📅 오늘 날짜: {today_date}")
+    print("=" * 50)
     
+    print("🍽️ NEIS API에서 급식 정보 조회 시작...")
     api_response = get_api_data(neis_api_key, today_date)
 
     if api_response:
+        print("=" * 50)
+        print("📊 NEIS API 응답 분석 시작...")
         print("--- NEIS API Raw Response ---")
         print(json.dumps(api_response, indent=2, ensure_ascii=False))
         print("-----------------------------")
         
+        print("📝 급식 정보 메시지 가공 시작...")
         telegram_message = format_meal_data(api_response)
         print(f"📝 가공된 메시지:\n{telegram_message}")
         
+        print("📤 Telegram으로 급식 정보 전송 시작...")
         success = send_to_telegram(telegram_bot_token, telegram_chat_id, telegram_message)
         if success:
             print("🎉 급식 정보 전송 완료!")
@@ -180,6 +291,10 @@ if __name__ == "__main__":
             print("💥 급식 정보 전송 실패!")
     else:
         print("❌ NEIS API에서 데이터를 가져올 수 없습니다.")
+        print("⚠️ API 실패 시에도 에러 메시지 전송을 시도합니다...")
         # API 실패 시에도 테스트 메시지 전송
-        error_message = f"⚠️ {today_date} 급식 정보 조회에 실패했습니다."
+        error_message = f"⚠️ {today_date} 급식 정보 조회에 실패했습니다.\n\n가능한 원인:\n• 해당 날짜에 급식 정보가 없음\n• API 서버 오류\n• 네트워크 연결 문제"
         send_to_telegram(telegram_bot_token, telegram_chat_id, error_message)
+    
+    print("=" * 50)
+    print("🏁 급식 알림봇 종료")
