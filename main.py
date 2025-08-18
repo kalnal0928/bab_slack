@@ -43,7 +43,8 @@ def get_api_data(api_key, meal_date):
     try:
         print(f"API 요청 파라미터: {params}")
         response = requests.get(API_URL, params=params, timeout=10)
-        response.raise_for_status()  # HTTP 에러 발생 시 예외 발생
+        response.raise_for_status() # Raise an exception for HTTP errors
+        print(f"Lunch API response: {response.text}")
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"API 요청 중 에러 발생: {e}")
