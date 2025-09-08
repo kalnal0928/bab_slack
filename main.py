@@ -36,7 +36,7 @@ def load_config():
 # NEIS API 기본 정보
 API_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo"
 ATPT_OFCDC_SC_CODE = "R10"  # 경상북도교육청
-SD_SCHUL_CODE = "R100000897"      # 안동중앙고등학교
+SD_SCHUL_CODE = "8750186"      # 안동중앙고등학교
 
 def get_api_data(api_key, meal_date):
     """NEIS API를 호출하여 급식 정보를 가져옵니다."""
