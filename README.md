@@ -60,7 +60,7 @@ python main.py
 ## 📊 API 정보
 
 - **교육청 코드**: R10 (경상북도교육청)
-- **학교 코드**: 8791090 (경덕중학교)
+- **학교 코드**: R100000897 (안동중앙고등학교)
 - **API 엔드포인트**: https://open.neis.go.kr/hub/mealServiceDietInfo
 
 ## 🔧 문제 해결
